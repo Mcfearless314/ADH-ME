@@ -1,0 +1,6 @@
+autogen-agentchat @ git+https://github.com/patrickstolc/autogen.git@0.2#egg=autogen-agentchat
+autogen==0.3.1
+ollama==0.3.3
+fix-busted-json==0.0.18
+python-dotenv~=1.1.0
+tavily-python==0.7.2
