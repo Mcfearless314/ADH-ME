@@ -4,7 +4,7 @@ first_name = "John"
 last_name = "Doe"
 birth_date = "2000-12-31"
 gender = "Male"
-occupation = "University student"
+occupation = "Software Development student"
 interests = ["Technology", "Gaming", "Music", "Movies"]
 preferred_communication_style = "Casual and friendly"
 user_goals = ("- To improve productivity and manage time effectively, especially in academic settings.\n"
@@ -13,7 +13,7 @@ user_goals = ("- To improve productivity and manage time effectively, especially
 
 
 user_info = f"""
-The following information is provided to the ADH-ME agent to help it understand the user's preferences and needs:
+The following information is provided to the AI agent to help it understand the user's preferences and needs:
 
 1. User's name: {first_name} {last_name}
 2. User's birth date: {birth_date}
@@ -23,8 +23,8 @@ The following information is provided to the ADH-ME agent to help it understand 
 6. User's preferred communication style: {preferred_communication_style}
 7. User's goals:
    {user_goals}
-
 """
+
 
 def get_user_info():
     return user_info
