@@ -5,7 +5,7 @@ import PyPDF2
 import requests
 
 
-def search_papers(topic, offset=0, paper_limit=3, download_pdfs=True):
+def search_papers(topic, offset=0, paper_limit=5, download_pdfs=True):
     base_url = "https://api.semanticscholar.org/graph/v1/paper/search"
 
     search_params = {

@@ -1,7 +1,8 @@
 import autogen
 from config import LLM_CONFIG
 from research_tool import search_papers
-from user_info_tool import user_info
+# from user_info_tool import user_info # This would be given to the agent as context, but it would
+# overwhelm the local LLM if included directly.
 
 
 class SummarizerTool:
@@ -10,10 +11,8 @@ class SummarizerTool:
             name="SummarizerAgent",
             llm_config=LLM_CONFIG,
             system_message=f"""
-            You are a specialized text summarization agent. Your task is to help a certain user by
-            creating concise summaries of provided texts and extract main points that the user can act upon.
-            
-            The user: {user_info}
+            You are a specialized text summarization agent. Your task is to create concise summaries of provided texts 
+            and extract main points that the reader can act upon.
             
             For each text you receive:
             1. Identify and extract the most important information
@@ -58,17 +57,35 @@ def main():
 
     # These are the texts the agent should summarize but research papers are most likely too long for
     # a local LLM to handle, so we will use a simple sample text instead.
-    # research_paper = search_papers("Improve productivity with ADHD")
-    # summary = summarizer.summarize_text(research_paper)
+    # Initialize variables
+    research_paper = ""
+    topic = "Increase productivity and reduce procrastination"
+    offset = 0
+    paper_limit = 3
+    max_attempts = 5
+    attempts = 0
 
-    simple_sample_text = """
-    People with ADHD can boost their focus and productivity by breaking tasks into smaller steps, 
-    using timers to stay on track, and minimizing distractions in their environment. Regular breaks, a 
-    consistent routine, and organizing tasks with lists or 
-    digital tools can also help maintain attention and improve efficiency.
-    """
-    summary = summarizer.summarize_text(simple_sample_text)
-    print(f"Summary: {summary}")
+    while not research_paper and attempts < max_attempts:
+        research_paper = search_papers(topic, offset=offset, paper_limit=paper_limit)
+        if not research_paper:
+            print(f"No results found in attempt {attempts + 1}. Trying with next offset...")
+            offset += paper_limit
+            attempts += 1
+
+    if research_paper:
+        summary = summarizer.summarize_text(research_paper)
+        print(f"Summary: {summary}")
+    else:
+        print("Could not find any relevant papers after multiple attempts.")
+
+    # simple_sample_text = """
+    # People with ADHD can boost their focus and productivity by breaking tasks into smaller steps,
+    # using timers to stay on track, and minimizing distractions in their environment. Regular breaks, a
+    # consistent routine, and organizing tasks with lists or
+    # digital tools can also help maintain attention and improve efficiency.
+    # """
+    # summary = summarizer.summarize_text(simple_sample_text)
+    # print(f"Summary: {summary}")
 
 
 if __name__ == "__main__":
