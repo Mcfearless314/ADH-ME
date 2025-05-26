@@ -1,7 +1,7 @@
 import json
 from autogen import AssistantAgent
 from config import LLM_CONFIG
-from tools.calender_tool import CalendarTool
+from tools.calendar_tool import CalendarTool
 from datetime import datetime
 
 today_utc = datetime.utcnow().strftime("%Y-%m-%d")
@@ -65,6 +65,7 @@ class CalendarAgent:
         self.tool = CalendarTool()
 
     def run(self, prompt: str):
+        self.tool.get_credentials()
         response = self.agent.generate_reply(messages=[{"role": "user", "content": prompt}])
 
         if isinstance(response, dict) and "content" in response:
