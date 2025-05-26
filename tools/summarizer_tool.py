@@ -1,67 +1,42 @@
-import autogen
+from autogen import AssistantAgent
 from config import LLM_CONFIG
 from research_tool import search_papers
 # from user_info_tool import user_info # This would be given to the agent as context, but it would
-# overwhelm the local LLM if included directly.
+# overwhelm the local LLM if included in this proof of concept.
 
 
-class SummarizerTool:
-    def __init__(self):
-        self.summarizer_agent = autogen.AssistantAgent(
-            name="SummarizerAgent",
-            llm_config=LLM_CONFIG,
-            system_message=f"""
-            You are a specialized text summarization agent. Your task is to create concise summaries of provided texts 
-            and extract main points that the reader can act upon.
-            
-            For each text you receive:
-            1. Identify and extract the most important information
-            2. Create a clear, cohesive summary that captures the essence of the original text
-            3. Keep your summary brief while maintaining crucial details
-            4. Use simple, direct language
-            
-            Respond only with the summary text and nothing else.
-            """
-        )
+summarizer_agent = AssistantAgent(
+    name="SummarizerAgent",
+    llm_config=LLM_CONFIG,
+    system_message=f"""
+    You are a text summarization agent. Your task is to create concise summaries of provided texts 
+    and extract main points that the reader can act upon.
+    
+    For each text you receive:
+    1. Identify and extract the most important information with simple and direct language
+    2. Create a clear, cohesive summary that captures the essence of the original text
+    
+    Respond only with the summary text and nothing else.
+    """
+)
 
-    def summarize_text(self, text: str, max_words: int = None) -> str:
-        """
-        Summarize the provided text
+def summarize_text(text) -> str:
+    prompt = f"Text to summarize: {text}"
 
-        Args:
-            text: The text to summarize
-            max_words: Optional maximum word count for the summary
+    messages = [{"role": "user", "content": prompt}]
+    response = summarizer_agent.generate_reply(messages)
 
-        Returns:
-            A concise summary of the text
-        """
-        prompt = f"Please summarize the following text in a clear and concise manner:"
-
-        if max_words:
-            prompt += f" Use approximately {max_words} words or less."
-
-        prompt += f"\n\nText to summarize: {text}"
-
-        messages = [{"role": "user", "content": prompt}]
-        response = self.summarizer_agent.generate_reply(messages)
-
-        if isinstance(response, dict):
-            return response.get("content", "")
-        else:
-            return response
+    if isinstance(response, dict):
+        return response.get("content", "")
+    else:
+        return response
 
 
 def main():
-    # Example usage
-    summarizer = SummarizerTool()
-
-    # These are the texts the agent should summarize but research papers are most likely too long for
-    # a local LLM to handle, so we will use a simple sample text instead.
-    # Initialize variables
     research_paper = ""
-    topic = "Increase productivity and reduce procrastination"
-    offset = 0
-    paper_limit = 3
+    topic = "Procrastination"
+    offset = 1
+    paper_limit = 1
     max_attempts = 5
     attempts = 0
 
@@ -73,19 +48,11 @@ def main():
             attempts += 1
 
     if research_paper:
-        summary = summarizer.summarize_text(research_paper)
+        print(research_paper)
+        summary = summarize_text(research_paper)
         print(f"Summary: {summary}")
     else:
         print("Could not find any relevant papers after multiple attempts.")
-
-    # simple_sample_text = """
-    # People with ADHD can boost their focus and productivity by breaking tasks into smaller steps,
-    # using timers to stay on track, and minimizing distractions in their environment. Regular breaks, a
-    # consistent routine, and organizing tasks with lists or
-    # digital tools can also help maintain attention and improve efficiency.
-    # """
-    # summary = summarizer.summarize_text(simple_sample_text)
-    # print(f"Summary: {summary}")
 
 
 if __name__ == "__main__":
