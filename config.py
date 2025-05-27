@@ -7,4 +7,5 @@ LLM_CONFIG = {
     "seed": 42,
     "native_tool_calls": False,
     "cache_seed": None,
+    "temperature": 0.5
 }

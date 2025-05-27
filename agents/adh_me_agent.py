@@ -1,88 +1,114 @@
-from autogen import AssistantAgent
+import warnings
+warnings.filterwarnings("ignore", message="flaml.automl is not available.*")
+from datetime import datetime, timezone
+from autogen import AssistantAgent, UserProxyAgent
 from config import LLM_CONFIG
-from calendar_agent import CalendarAgent
+from tools.calendar_tool import schedule_event_handler, get_credentials
+from tools.research_tool import search_papers
+from tools.summarizer_tool import summarize_text
+# from tools.user_info_tool import user_info # This would be given to the agent as context, but it would
+                                             # overwhelm the local LLM if included in this proof of concept.
 
-adh_me_agent = AssistantAgent(
-    name="ADH-ME-Agent",
-    llm_config=LLM_CONFIG,
-    system_message="""
-You are a neurodivergent-friendly productivity assistant.
-Your core goal is to help the user stay focused, break big tasks into manageable steps, manage distractions,
-and provide motivation and structure.
-
-You respond in a concise, supportive tone.
-
-If the user mentions tasks that involve specific dates, durations, or time management:
-
-- Ask them if they would like help scheduling it. Use the words: "Would you like help scheduling ..."
-- Only if they say yes, then send a scheduling prompt to CalendarAgent.
-- Do not send anything to CalendarAgent without user confirmation.
-
-
-After consulting another agent, summarize the answer clearly and return it to the user.
-
-NEVER say "I can't help." Instead, always either:
-- solve the task yourself, or
-- call another agent for help and deliver the result to the user.
-
-Examples:
-- If the user says “I have an exam next week and I’m overwhelmed,” help them break it into smaller steps. Then ask CalendarAgent to help schedule study sessions.
-- If the user says “I need a paper on dopamine and motivation,” ask ResearchAgent and return a clean summary.
-
-Stay empathetic and pragmatic. You’re here to help the user succeed.
+PROMPT_RESEARCH_TOPIC = """
+The user wants to find academic papers related to a specific topic.
+Use the `search_papers` tool to find relevant academic papers. If the user provides a topic, call the `search_papers` function with appropriate parameters.
+Respond with the results in a clear, structured way.
 """
-)
+
+PROMPT_SUMMARIZE_TEXT = """Summarize the provided text and extract main points that the reader can act upon.
+For each text you receive:
+
+    1. Identify and extract the most important information with simple and direct language
+    2. Create a clear, cohesive summary that captures the essence of the original text
+    
+Respond only with the summary text and nothing else."""
+
+today_utc = datetime.utcnow().strftime("%Y-%m-%d")
+
+PROMPT_CREATE_EVENT = f"""Today is {today_utc} UTC.
+
+Your task is to schedule calendar events based on the user's input. Follow these rules:
+
+- Always output start and end times as precise timestamps in the format: YYYY-MM-DD HH:MM (24-hour time, zero-padded).
+- Do not use relative or vague time expressions like "tomorrow", "next week", or "6 hours from now".
+- Instead, interpret these phrases, reason about them, and convert them into exact timestamps in UTC.
+- If no exact time is provided, make reasonable assumptions:
+  - Default start time: 09:00 UTC.
+  - Default duration: 1 hour.
+- Always provide a title and a description.
+
+Output the final event as a JSON object, like this:
+
+{{
+  "title": "Study Session",
+  "description": "Focused study session on biology topics.",
+  "start": "2025-05-28 14:00",
+  "end": "2025-05-28 16:00"
+}}
+
+Do not output any extra text—only the JSON object in this exact format.
+
+Always ask the user for confirmation before using the `schedule_event_handler` tool to create the event.
+"""
+
+def create_adh_me_agent():
+    adh_me_agent = AssistantAgent(
+        name="ADH-Me Agent",
+        llm_config=LLM_CONFIG,
+        system_message="""
+        You are a neurodivergent-friendly productivity assistant.
+        Your core goal is to help the user stay focused, break big tasks into manageable steps, manage distractions,
+        and provide motivation and structure.
+        
+        You respond in a concise, supportive tone.
+        
+        After using a tool, summarize the answer clearly and return it to the user.
+        
+         You have access to use the following tools:
+        - `search_papers`: Search academic papers related to a query.
+        - `summarize_text`: Summarize a given text and extract main points.
+        - `schedule_event_handler`: Schedule an event based on user input.
+        
+        Examples:
+        - If the user says “I have an exam next week and I’m overwhelmed,” help them break it into smaller steps. Then use `schedule_event_handler` to create study events.
+        - If the user says “I need a paper on dopamine and motivation,” use `search_papers` to find relevant academic papers, then summarize them with `summarize_text`.
+        
+        Stay empathetic and pragmatic. You’re here to help the user succeed.
+        
+        ALWAYS ask the user for confirmation before using the schedule_event_handler tool.
+        
+        Start by greeting the user, and asking them how you can help them before calling any tools.
+        """
+    )
+
+    adh_me_agent.register_for_llm(name="search_papers", description=PROMPT_RESEARCH_TOPIC)(search_papers)
+    adh_me_agent.register_for_llm(name="summarize_text", description=PROMPT_SUMMARIZE_TEXT)(summarize_text)
+    adh_me_agent.register_for_llm(name="schedule_event_handler", description=PROMPT_CREATE_EVENT)(schedule_event_handler)
+
+    return adh_me_agent
 
 
-class ADHMeAgent:
-    def __init__(self, adh_me_agent, calendar_agent):
-        self.adh_me_agent = adh_me_agent
-        self.calendar_agent = calendar_agent
-        self.awaiting_confirmation = False
-        self.pending_schedule_prompt = None
-        self.chat_history = []
+def create_user_proxy():
+    user_proxy = UserProxyAgent(
+        name="User Proxy",
+        llm_config=False,
+        human_input_mode="ALWAYS",
+        code_execution_config = {"use_docker": False},
+        function_map = {
+            "search_papers": search_papers,
+            "summarize_text": summarize_text,
+            "schedule_event_handler": schedule_event_handler
+        }
+    )
 
-    def handle_user_input(self, user_input: str) -> str:
-        self.chat_history.append({"role": "user", "content": user_input})
+    return user_proxy
 
-        if self.awaiting_confirmation:
-            if any(word in user_input.lower() for word in ("yes", "y", "sure", "ok", "please", "yeah")):
-                self.calendar_agent.run(self.pending_schedule_prompt)
 
-                self.awaiting_confirmation = False
-                self.pending_schedule_prompt = None
-
-                self.chat_history.append({"role": "assistant", "content": "Got it! I've scheduled your event."})
-
-                return "Got it! I've scheduled your event."
-
-            else:
-                self.awaiting_confirmation = False
-                self.pending_schedule_prompt = None
-                return "Okay, I won't schedule anything now. Let me know if you want to later."
-
-        adh_me_response = self.adh_me_agent.generate_reply(messages=self.chat_history)
-        if isinstance(adh_me_response, dict):
-            reply = adh_me_response.get("content", "")
-        else:
-            reply = adh_me_response
-
-        self.chat_history.append({"role": "assistant", "content": reply})
-
-        if "would you like help scheduling" in reply.lower():
-            self.pending_schedule_prompt = user_input
-            self.awaiting_confirmation = True
-
-        return reply
-
-    def run_chat(self):
-        print("Hello, how can I help you today?")
-        while True:
-            user_input = input("You: ")
-            response = self.handle_user_input(user_input)
-            print("ADH-Me:", response)
+def main():
+    get_credentials()
+    adhme_agent = create_adh_me_agent()
+    user_proxy_agent = create_user_proxy()
+    user_proxy_agent.initiate_chat(adhme_agent, message="Hello, can you help me?")
 
 if __name__ == "__main__":
-    calendar_agent = CalendarAgent()
-    adhme = ADHMeAgent(adh_me_agent, calendar_agent)
-    adhme.run_chat()
+    main()
