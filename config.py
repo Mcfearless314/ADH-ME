@@ -3,8 +3,9 @@ LLM_CONFIG = {
     "client_host": "127.0.0.1:11434",
     "api_type": "ollama",
     "repeat_penalty": 1.1,
-    "stream": False,
+    "stream": True,
     "seed": 42,
+    "temperature": 1,
     "native_tool_calls": False,
     "cache_seed": None,
 }
