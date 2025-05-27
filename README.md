@@ -2,7 +2,7 @@
 
 To get the project up and running you will have to setup a few things. As this is a proof of concept project, security and userfriendlyness has not been prioritized, but we hope you will enjoy the application anyway.
 
-**Warning! If you fork this project, please remember not to push any of your credentials or secrets to your repository.**
+**Warning! If you fork this project, please remember not to push any of your credentials or secrets to your remote repository.**
 
 ## Setup Google API for your Calendar
 1. Follow this link for a step by step guide on how to setup the Google API for your Calendar: https://developers.google.com/workspace/calendar/api/quickstart/python, we will also go through the setup here:
@@ -24,6 +24,8 @@ To get the project up and running you will have to setup a few things. As this i
 
 ## Setup ADH-Me
 1. Clone the repository and open it.
-2. Run ```pip install requirements.txt```
-3. Run ```pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib```
-4. Run the file calendar_agent
+2. Place the credentials.json file you have copied to the folder "tools"
+3. Run ```pip install -r requirements.txt```
+5. Run the file adh_me_agent, this will prompt you to log in through google to make sure it has access to you calendar.
+6. Once authorized, you should see a new file called token.json in your tools folder.
+7. You should now be able to write to the AI through the console.
