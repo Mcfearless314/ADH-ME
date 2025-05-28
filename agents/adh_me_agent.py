@@ -10,12 +10,13 @@ from tools.summarizer_tool import summarize_text
                                              # overwhelm the local LLM if included in this proof of concept.
 
 PROMPT_RESEARCH_TOPIC = """
-The user wants to find academic papers related to a specific topic.
-Use the `search_papers` tool to find relevant academic papers. If the user provides a topic, call the `search_papers` function with appropriate parameters.
+When the user asks for help finding academic papers related to a specific topic, 
+use the `search_papers` tool to find relevant academic papers. If the user provides a topic, call the `search_papers` function with appropriate parameters.
 Respond with the results in a clear, structured way.
 """
 
-PROMPT_SUMMARIZE_TEXT = """Summarize the provided text and extract main points that the reader can act upon.
+PROMPT_SUMMARIZE_TEXT = """
+When the user asks and provides a text, analyze and extract main points that the reader can act upon.
 For each text you receive:
 
     1. Identify and extract the most important information with simple and direct language
@@ -32,16 +33,17 @@ Your task is to schedule calendar events based on the user's input. Follow these
 - Always output start and end times as precise timestamps in the format: YYYY-MM-DD HH:MM (24-hour time, zero-padded).
 - Do not use relative or vague time expressions like "tomorrow", "next week", or "6 hours from now".
 - Instead, interpret these phrases, reason about them, and convert them into exact timestamps in UTC.
-- If no exact time is provided, make reasonable assumptions:
+- Try to derive the exact date and time from the user's input.
+- If no exact time is provided or can be derived, make reasonable assumptions:
   - Default start time: 09:00 UTC.
   - Default duration: 1 hour.
 - Always provide a title and a description.
 
-Output the final event as a JSON object, like this:
+Output the final event as a JSON object, which should like this:
 
 {{
-  "title": "Study Session",
-  "description": "Focused study session on biology topics.",
+  "title": "",
+  "description": "",
   "start": "2025-05-28 14:00",
   "end": "2025-05-28 16:00"
 }}

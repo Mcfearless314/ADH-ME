@@ -25,7 +25,6 @@ def search_papers(
 
     while (time.time() - start_time) < timeout:
         try:
-            print("i am searching for papers...")
             response = requests.get(base_url, params=search_params)
 
             if response.status_code == 200:
