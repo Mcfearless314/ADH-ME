@@ -5,7 +5,7 @@ The ADH-Me agent has three main functionalities at the moment:
  - A summarizer which summarizes found papers
 
 The calendar booking feature can book 1 or more appointments into your google calendar depending on your request, but only after an user affirmation.
-The research paper summarizer can find research papers and give a short summary and a link to the research paper in question.
+The research paper finder uses the semanticscholar API to find research papers and the summarizer can give a short summary of the research paper in question.
 
 ## Inputs
 1. "Book a study session tomorrow at 14:00 for 2 hours"
